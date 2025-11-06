@@ -50,20 +50,20 @@ export function CustomerSearchResults({
       </div>
 
       {/* Results table */}
-      <div className="overflow-x-auto rounded border border-gray-300 bg-white">
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="bg-gray-100 text-left text-sm font-semibold text-gray-700">
-              <th className="border-b border-r border-gray-300 px-3 py-2 w-12"></th>
-              <th className="border-b border-r border-gray-300 px-3 py-2">No. Cliente</th>
-              <th className="border-b border-r border-gray-300 px-3 py-2">Nombre</th>
-              <th className="border-b border-r border-gray-300 px-3 py-2">RFC</th>
-              <th className="border-b border-r border-gray-300 px-3 py-2">Dirección</th>
-              <th className="border-b border-gray-300 px-3 py-2">Teléfono</th>
-            </tr>
-          </thead>
-          <tbody>
-            <RadioGroup value={selectedCustomerId} onValueChange={setSelectedCustomerId}>
+      <RadioGroup value={selectedCustomerId} onValueChange={setSelectedCustomerId}>
+        <div className="overflow-x-auto rounded border border-gray-300 bg-white">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="bg-gray-100 text-left text-sm font-semibold text-gray-700">
+                <th className="border-b border-r border-gray-300 px-3 py-2 w-12"></th>
+                <th className="border-b border-r border-gray-300 px-3 py-2">No. Cliente</th>
+                <th className="border-b border-r border-gray-300 px-3 py-2">Nombre</th>
+                <th className="border-b border-r border-gray-300 px-3 py-2">RFC</th>
+                <th className="border-b border-r border-gray-300 px-3 py-2">Dirección</th>
+                <th className="border-b border-gray-300 px-3 py-2">Teléfono</th>
+              </tr>
+            </thead>
+            <tbody>
               {results.map((customer) => (
                 <tr
                   key={customer.id}
@@ -90,10 +90,10 @@ export function CustomerSearchResults({
                   </td>
                 </tr>
               ))}
-            </RadioGroup>
-          </tbody>
-        </table>
-      </div>
+            </tbody>
+          </table>
+        </div>
+      </RadioGroup>
 
       {/* Action buttons */}
       <div className="mt-6 flex gap-3">
