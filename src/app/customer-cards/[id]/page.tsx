@@ -1,266 +1,220 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
-import { ProtectedRoute } from "@/components/protected-route";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Loader2, AlertCircle, CreditCard } from "lucide-react";
-import { getCustomerCards } from "@/lib/actions/customer-cards";
+import { useEffect, useState } from 'react';
+import { useRouter, useParams } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { CustomerCardsDisplay } from '@/components/customer-search/customer-cards-display';
+import { ArrowLeft } from 'lucide-react';
+import type { CustomerDetail } from '@/lib/types/customer';
+import { getCustomerById } from '@/lib/actions/customer-detail';
+import { getCustomerCards, type CustomerCardData } from '@/lib/actions/cards';
 
 export default function CustomerCardsPage() {
-  const params = useParams();
   const router = useRouter();
+  const params = useParams();
   const customerId = params.id as string;
-  const [selectedCardId, setSelectedCardId] = useState<string>("");
+  
+  const [customer, setCustomer] = useState<CustomerDetail | null>(null);
+  const [cards, setCards] = useState<CustomerCardData[]>([]);
+  const [selectedCardId, setSelectedCardId] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string>('');
 
-  // Fetch customer cards using TanStack Query
-  const {
-    data: cards,
-    isLoading,
-    error,
-  } = useQuery({
-    queryKey: ["customer-cards", customerId],
-    queryFn: () => getCustomerCards(customerId),
-    enabled: !!customerId,
-  });
+  useEffect(() => {
+    if (!customerId) {
+      router.push('/customer-search');
+      return;
+    }
 
-  const handleReturn = () => {
-    router.back();
+    // Load customer data and cards
+    const loadData = async () => {
+      try {
+        setIsLoading(true);
+        setError('');
+        
+        // Load customer details
+        const customerData = await getCustomerById(customerId);
+        
+        if (!customerData) {
+          setError('Cliente no encontrado');
+          setIsLoading(false);
+          return;
+        }
+        
+        setCustomer(customerData);
+        
+        // Load customer cards
+        try {
+          const cardsData = await getCustomerCards(customerId);
+          setCards(cardsData);
+          
+          if (cardsData.length === 0) {
+            // No cards scenario is handled by the component
+            console.log('Customer has no cards');
+          }
+        } catch (cardError) {
+          console.error('Error loading cards:', cardError);
+          setError('No se pudieron cargar las Tarjetas');
+        }
+      } catch (err) {
+        setError('Error al cargar la información del cliente.');
+        console.error('Error loading data:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadData();
+  }, [customerId, router]);
+
+  const handleCardSelect = (cardId: string) => {
+    setSelectedCardId(cardId);
   };
 
   const handleAccept = () => {
-    if (selectedCardId) {
-      // Navigate to payment processing or next step with selected card
-      router.push(`/payment/${customerId}/${selectedCardId}`);
+    if (!selectedCardId) {
+      return;
+    }
+    
+    const selectedCard = cards.find(card => card.id === selectedCardId);
+    if (selectedCard) {
+      // Navigate to payment processing (to be implemented in later tasks)
+      console.log('Card selected:', selectedCard);
+      // For now, show success message
+      alert(`Tarjeta seleccionada: ${selectedCard.cardType} terminada en ${selectedCard.lastFourDigits}`);
     }
   };
 
-  if (isLoading) {
-    return (
-      <ProtectedRoute>
-        <div className="flex min-h-screen items-center justify-center bg-gray-50">
-          <div className="text-center">
-            <Loader2 className="mx-auto h-12 w-12 animate-spin text-blue-600" />
-            <p className="mt-4 text-gray-600">Cargando tarjetas del cliente...</p>
-          </div>
-        </div>
-      </ProtectedRoute>
-    );
-  }
-
-  if (error) {
-    return (
-      <ProtectedRoute>
-        <div className="min-h-screen bg-gray-50 p-6">
-          {/* Header */}
-          <header className="mb-6 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-red-500 to-red-600">
-                <span className="text-2xl font-bold text-white">C</span>
-              </div>
-              <h1 className="text-2xl font-semibold text-gray-800">Caja Corporativa</h1>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600">Caja bancaria</span>
-            </div>
-          </header>
-
-          <Alert variant="destructive" className="mb-6">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              Error al cargar las tarjetas del cliente. Por favor, intenta de nuevo.
-            </AlertDescription>
-          </Alert>
-
-          <div className="mt-6">
-            <Button
-              onClick={handleReturn}
-              variant="destructive"
-              className="bg-red-600 hover:bg-red-700 text-white px-6"
-            >
-              Regresar
-            </Button>
-          </div>
-        </div>
-      </ProtectedRoute>
-    );
-  }
-
-  // Handle no cards scenario
-  if (!cards || cards.length === 0) {
-    return (
-      <ProtectedRoute>
-        <div className="min-h-screen bg-gray-50 p-6">
-          {/* Header */}
-          <header className="mb-6 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-red-500 to-red-600">
-                <span className="text-2xl font-bold text-white">C</span>
-              </div>
-              <h1 className="text-2xl font-semibold text-gray-800">Caja Corporativa</h1>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600">Caja bancaria</span>
-            </div>
-          </header>
-
-          {/* Breadcrumb */}
-          <div className="mb-6">
-            <nav className="text-sm text-blue-600">
-              <span className="cursor-pointer hover:underline" onClick={handleReturn}>
-                Búsqueda de cliente y pago
-              </span>
-            </nav>
-            <h2 className="mt-2 text-xl font-semibold text-gray-800">
-              Tarjetas del Cliente
-            </h2>
-          </div>
-
-          <Alert className="mb-6 border-blue-200 bg-blue-50">
-            <AlertCircle className="h-4 w-4 text-blue-600" />
-            <AlertDescription className="text-blue-800">
-              Este cliente no tiene tarjetas registradas en el sistema.
-            </AlertDescription>
-          </Alert>
-
-          <div className="mt-6">
-            <Button
-              onClick={handleReturn}
-              variant="destructive"
-              className="bg-red-600 hover:bg-red-700 text-white px-6"
-            >
-              Regresar
-            </Button>
-          </div>
-        </div>
-      </ProtectedRoute>
-    );
-  }
+  const handleReturn = () => {
+    router.push(`/customer-detail/${customerId}`);
+  };
 
   return (
-    <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50 p-6">
-        {/* Header */}
-        <header className="mb-6 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-red-500 to-red-600">
-              <span className="text-2xl font-bold text-white">C</span>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header matching prototype */}
+      <div className="bg-white border-b">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold">
+                C
+              </div>
+              <span className="text-xl font-semibold">Caja Corporativa</span>
             </div>
-            <h1 className="text-2xl font-semibold text-gray-800">Caja Corporativa</h1>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600">Caja bancaria</span>
-          </div>
-        </header>
+        </div>
+      </div>
 
-        {/* Breadcrumb */}
+      <div className="container mx-auto px-4 py-6">
+        {/* Page Title - matching prototype */}
         <div className="mb-6">
-          <nav className="text-sm text-blue-600">
-            <span className="cursor-pointer hover:underline" onClick={handleReturn}>
-              Búsqueda de cliente y pago
-            </span>
-          </nav>
-          <h2 className="mt-2 text-xl font-semibold text-gray-800">
-            Selecciona una Tarjeta
-          </h2>
+          <h1 className="text-2xl font-normal text-gray-900">Pago de tarjeta</h1>
         </div>
 
-        {/* Info message */}
-        <div className="mb-4 rounded bg-blue-100 px-4 py-3 text-sm text-blue-800">
-          Selecciona la tarjeta con la que el cliente realizará el pago.
-        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Left Column: Customer Data - matching prototype */}
+          <div>
+            <Card>
+              <CardContent className="pt-6">
+                <h2 className="text-lg font-normal mb-4">Datos del cliente</h2>
+                
+                {isLoading ? (
+                  <div className="space-y-3">
+                    <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+                    <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+                    <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+                  </div>
+                ) : customer ? (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm font-medium text-gray-700">Nombre completo</p>
+                        <p className="text-sm text-gray-900">
+                          {`${customer.firstName} ${customer.secondLastName || ''} ${customer.lastName}`.trim()}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-700">Estado</p>
+                        <p className="text-sm text-gray-900">{customer.addresses[0]?.stateName || '-'}</p>
+                      </div>
+                    </div>
 
-        {/* Cards display */}
-        <Card>
-          <CardHeader className="border-b bg-gray-50 px-6 py-3">
-            <h3 className="text-sm font-semibold uppercase text-gray-700">
-              TARJETAS DISPONIBLES ({cards.length})
-            </h3>
-          </CardHeader>
-          <CardContent className="p-6">
-            <RadioGroup value={selectedCardId} onValueChange={setSelectedCardId}>
-              <div className="space-y-3">
-                {cards.map((card) => (
-                  <div
-                    key={card.id}
-                    className={`cursor-pointer rounded-lg border-2 p-4 transition-all ${
-                      selectedCardId === card.id
-                        ? "border-blue-500 bg-blue-50"
-                        : "border-gray-200 hover:border-blue-300"
-                    }`}
-                    onClick={() => setSelectedCardId(card.id)}
-                  >
-                    <div className="flex items-start gap-4">
-                      <RadioGroupItem value={card.id} className="mt-1" />
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <CreditCard className="h-5 w-5 text-gray-600" />
-                          <h4 className="font-semibold text-gray-900">
-                            {card.cardType} - {card.maskedNumber}
-                          </h4>
-                          <span
-                            className={`ml-auto rounded-full px-3 py-1 text-xs font-medium ${
-                              card.status === "active"
-                                ? "bg-green-100 text-green-700"
-                                : "bg-red-100 text-red-700"
-                            }`}
-                          >
-                            {card.status === "active" ? "Activa" : "Inactiva"}
-                          </span>
-                        </div>
-                        <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-                          <div>
-                            <span className="text-gray-500">Titular: </span>
-                            <span className="text-gray-900">{card.cardholderName}</span>
-                          </div>
-                          <div>
-                            <span className="text-gray-500">Exp: </span>
-                            <span className="text-gray-900">{card.expirationDate}</span>
-                          </div>
-                          <div>
-                            <span className="text-gray-500">Límite: </span>
-                            <span className="text-gray-900">
-                              ${card.creditLimit?.toLocaleString("es-MX") || "N/A"}
-                            </span>
-                          </div>
-                          <div>
-                            <span className="text-gray-500">Disponible: </span>
-                            <span className="text-gray-900">
-                              ${card.availableCredit?.toLocaleString("es-MX") || "N/A"}
-                            </span>
-                          </div>
-                        </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm font-medium text-gray-700">Número de cliente</p>
+                        <p className="text-sm text-blue-600 hover:underline cursor-pointer">
+                          {customer.id}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-700">Municipio</p>
+                        <p className="text-sm text-gray-900">{customer.addresses[0]?.municipalityName || '-'}</p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm font-medium text-gray-700">Fecha de nac.</p>
+                        <p className="text-sm text-gray-900">-</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-700">Dirección</p>
+                        <p className="text-sm text-gray-900">{customer.addresses[0]?.street || '-'}</p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm font-medium text-gray-700">RFC</p>
+                        <p className="text-sm text-gray-900">{customer.governmentIds.find(id => id.type === 'RFC')?.number || '-'}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-700">Teléfono casa</p>
+                        <p className="text-sm text-gray-900">{customer.phones.find(p => p.type === 'home')?.number || '-'}</p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div></div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-700">Teléfono oficina</p>
+                        <p className="text-sm text-gray-900">{customer.phones.find(p => p.type === 'office')?.number || '0'}</p>
                       </div>
                     </div>
                   </div>
-                ))}
-              </div>
-            </RadioGroup>
-          </CardContent>
-        </Card>
+                ) : (
+                  <p className="text-sm text-gray-600">No se pudo cargar la información del cliente.</p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Right Column: Card Selection - matching prototype */}
+          <div>
+            <CustomerCardsDisplay
+              cards={cards}
+              selectedCardId={selectedCardId}
+              onCardSelect={handleCardSelect}
+              onAccept={handleAccept}
+              isLoading={isLoading}
+              error={error}
+            />
+          </div>
+        </div>
 
         {/* Action Buttons */}
-        <div className="mt-6 flex gap-3">
+        <div className="mt-6 flex justify-start">
           <Button
-            onClick={handleAccept}
-            disabled={!selectedCardId}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6"
-          >
-            Aceptar
-          </Button>
-          <Button
+            variant="outline"
             onClick={handleReturn}
-            variant="destructive"
-            className="bg-red-600 hover:bg-red-700 text-white px-6"
+            className="flex items-center gap-2"
           >
+            <ArrowLeft className="h-4 w-4" />
             Regresar
           </Button>
         </div>
       </div>
-    </ProtectedRoute>
+    </div>
   );
 }
