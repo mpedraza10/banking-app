@@ -133,7 +133,7 @@ export async function searchCustomers(
       results = results.filter((r) => customerIdsWithAddresses.includes(r.id));
     }
 
-    // For each result, get primary phone and address
+    // For each result, get primary phone, address, and RFC
     const enrichedResults: CustomerSearchResult[] = await Promise.all(
       results.map(async (customer) => {
         // Get primary phone
@@ -141,6 +141,13 @@ export async function searchCustomers(
           .select({ number: phones.number })
           .from(phones)
           .where(eq(phones.customerId, customer.id))
+          .limit(1);
+
+        // Get RFC
+        const rfcRecords = await db
+          .select({ number: governmentIds.number })
+          .from(governmentIds)
+          .where(and(eq(governmentIds.customerId, customer.id), eq(governmentIds.type, "RFC")))
           .limit(1);
 
         // Get primary address with location details
@@ -160,15 +167,18 @@ export async function searchCustomers(
           .limit(1);
 
         const primaryPhone = primaryPhones[0]?.number || "";
+        const rfc = rfcRecords[0]?.number || null;
         const primaryAddress = primaryAddresses[0]
           ? `${primaryAddresses[0].street}, ${primaryAddresses[0].neighborhoodName || ""}, ${primaryAddresses[0].municipalityName}, ${primaryAddresses[0].stateName} ${primaryAddresses[0].postalCode}`.trim()
           : "";
 
         return {
           id: customer.id,
+          customerNumber: customer.id.slice(0, 10), // Using first 10 chars of ID as customer number
           firstName: customer.firstName,
           lastName: customer.lastName,
           secondLastName: customer.middleName,
+          rfc,
           status: customer.status,
           primaryPhone,
           primaryAddress,

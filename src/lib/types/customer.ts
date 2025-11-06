@@ -19,9 +19,11 @@ export interface CustomerSearchFilters {
 // Customer Search Result Types (from API)
 export interface CustomerSearchResult {
   id: string;
+  customerNumber: string;
   firstName: string;
   lastName: string;
   secondLastName: string | null;
+  rfc: string | null;
   status: string;
   primaryPhone: string;
   primaryAddress: string;

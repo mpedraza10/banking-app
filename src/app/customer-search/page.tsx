@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { ProtectedRoute } from "@/components/protected-route";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -16,6 +17,7 @@ import { searchCustomers } from "@/lib/actions/customer-search";
 import { CustomerSearchResults } from "@/components/customer-search/customer-search-results";
 
 export default function CustomerSearchPage() {
+  const router = useRouter();
   const [filters, setFilters] = useState<CustomerSearchFilters>({
     primaryPhone: "",
     secondaryPhone: "",
@@ -95,6 +97,16 @@ export default function CustomerSearchPage() {
     });
     setValidationError("");
     setFieldErrors({});
+  };
+
+  const handleCustomerSelect = (customerId: string) => {
+    // Navigate to customer detail page
+    router.push(`/customer-detail/${customerId}`);
+  };
+
+  const handleReturnFromResults = () => {
+    // Clear search results to return to search form
+    searchMutation.reset();
   };
 
   const handleSearch = async () => {
@@ -355,6 +367,8 @@ export default function CustomerSearchPage() {
           <CustomerSearchResults
             results={searchMutation.data.data}
             totalCount={searchMutation.data.totalCount}
+            onCustomerSelect={handleCustomerSelect}
+            onReturn={handleReturnFromResults}
           />
         )}
       </div>
