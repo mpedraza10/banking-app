@@ -5,6 +5,7 @@ import "./globals.css";
 import { QueryProvider } from '@/lib/queryClient';
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
+import { WorkflowProvider } from "@/lib/context/workflow-context";
 
 const inter = Inter({
   variable: "--font-geist-sans",
@@ -35,7 +36,11 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <QueryProvider>{children}</QueryProvider>
+          <QueryProvider>
+            <WorkflowProvider>
+              {children}
+            </WorkflowProvider>
+          </QueryProvider>
           <Toaster />
         </ThemeProvider>
       </body>

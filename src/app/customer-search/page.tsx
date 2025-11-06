@@ -8,13 +8,13 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Info, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { HierarchicalAddressSelect } from "@/components/customer-search/hierarchical-address-select";
 import type { CustomerSearchFilters } from "@/lib/types/customer";
 import { validateSearchFilters } from "@/lib/utils/search-validation";
 import { searchCustomers } from "@/lib/actions/customer-search";
 import { CustomerSearchResults } from "@/components/customer-search/customer-search-results";
+import { InfoBanner, WorkflowAlert } from "@/components/workflow";
 
 export default function CustomerSearchPage() {
   const router = useRouter();
@@ -153,19 +153,19 @@ export default function CustomerSearchPage() {
           </div>
         </header>
 
-        {/* Info Alert */}
-        <Alert className="mb-6 border-blue-200 bg-blue-50">
-          <Info className="h-4 w-4 text-blue-600" />
-          <AlertDescription className="text-blue-800">
-            Llena alguno de los campos solicitados para iniciar la búsqueda del cliente.
-          </AlertDescription>
-        </Alert>
+        {/* Info Banner */}
+        <InfoBanner 
+          message="Llena alguno de los campos solicitados para iniciar la búsqueda del cliente."
+          className="mb-6"
+        />
 
         {/* Validation Error */}
         {validationError && (
-          <Alert variant="destructive" className="mb-6">
-            <AlertDescription>{validationError}</AlertDescription>
-          </Alert>
+          <WorkflowAlert 
+            type="error"
+            message={validationError}
+            className="mb-6"
+          />
         )}
 
         {/* Search Form Layout */}

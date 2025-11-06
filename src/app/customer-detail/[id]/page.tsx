@@ -4,10 +4,9 @@ import { useParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { ProtectedRoute } from "@/components/protected-route";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, AlertCircle } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { getCustomerById } from "@/lib/actions/customer-detail";
+import { WorkflowNavigation, WorkflowHeader, WorkflowAlert } from "@/components/workflow";
 
 export default function CustomerDetailPage() {
   const params = useParams();
@@ -70,28 +69,26 @@ export default function CustomerDetailPage() {
             </div>
           </header>
 
-          <Alert variant="destructive" className="mb-6">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{errorMessage}</AlertDescription>
-          </Alert>
+          <WorkflowAlert 
+            type="error"
+            message={errorMessage}
+            className="mb-6"
+          />
 
           {!customer && (
-            <Alert className="mb-6 border-blue-200 bg-blue-50">
-              <AlertDescription className="text-blue-800">
-                No hay información de búsqueda para este cliente. Por favor, intenta realizar una nueva búsqueda.
-              </AlertDescription>
-            </Alert>
+            <WorkflowAlert 
+              type="info"
+              message="No hay información de búsqueda para este cliente. Por favor, intenta realizar una nueva búsqueda."
+              className="mb-6"
+            />
           )}
 
-          <div className="mt-6">
-            <Button
-              onClick={handleReturn}
-              variant="destructive"
-              className="bg-red-600 hover:bg-red-700 text-white px-6"
-            >
-              Regresar
-            </Button>
-          </div>
+          <WorkflowNavigation
+            showReturn
+            returnLabel="Regresar"
+            onReturn={handleReturn}
+            className="mt-6"
+          />
         </div>
       </ProtectedRoute>
     );
@@ -113,17 +110,15 @@ export default function CustomerDetailPage() {
           </div>
         </header>
 
-        {/* Breadcrumb */}
-        <div className="mb-6">
-          <nav className="text-sm text-blue-600">
-            <span className="cursor-pointer hover:underline" onClick={handleReturn}>
-              Búsqueda de cliente y pago
-            </span>
-          </nav>
-          <h2 className="mt-2 text-xl font-semibold text-gray-800">
-            Información del Cliente
-          </h2>
-        </div>
+        {/* Page Header with Breadcrumb */}
+        <WorkflowHeader
+          title="Información del Cliente"
+          breadcrumbs={[
+            { label: "Búsqueda de cliente y pago", href: "/customer-search" },
+            { label: "Información del Cliente" },
+          ]}
+          className="mb-6"
+        />
 
         {/* Customer Information Grid */}
         <div className="grid gap-6 lg:grid-cols-2">
@@ -263,21 +258,15 @@ export default function CustomerDetailPage() {
         </div>
 
         {/* Action Buttons */}
-        <div className="mt-6 flex gap-3">
-          <Button
-            onClick={handleAccept}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6"
-          >
-            Aceptar
-          </Button>
-          <Button
-            onClick={handleReturn}
-            variant="destructive"
-            className="bg-red-600 hover:bg-red-700 text-white px-6"
-          >
-            Regresar
-          </Button>
-        </div>
+        <WorkflowNavigation
+          showReturn
+          returnLabel="Regresar"
+          onReturn={handleReturn}
+          showAccept
+          acceptLabel="Aceptar"
+          onAccept={handleAccept}
+          className="mt-6"
+        />
       </div>
     </ProtectedRoute>
   );

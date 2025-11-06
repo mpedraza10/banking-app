@@ -2,13 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { CustomerCardsDisplay } from '@/components/customer-search/customer-cards-display';
-import { ArrowLeft } from 'lucide-react';
 import type { CustomerDetail } from '@/lib/types/customer';
 import { getCustomerById } from '@/lib/actions/customer-detail';
 import { getCustomerCards, type CustomerCardData } from '@/lib/actions/cards';
+import { WorkflowNavigation } from '@/components/workflow';
 
 export default function CustomerCardsPage() {
   const router = useRouter();
@@ -204,16 +203,16 @@ export default function CustomerCardsPage() {
         </div>
 
         {/* Action Buttons */}
-        <div className="mt-6 flex justify-start">
-          <Button
-            variant="outline"
-            onClick={handleReturn}
-            className="flex items-center gap-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Regresar
-          </Button>
-        </div>
+        <WorkflowNavigation
+          showReturn
+          returnLabel="Regresar"
+          onReturn={handleReturn}
+          showAccept
+          acceptLabel="Seleccionar Tarjeta"
+          onAccept={handleAccept}
+          acceptDisabled={!selectedCardId}
+          className="mt-6"
+        />
       </div>
     </div>
   );
