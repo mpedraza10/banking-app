@@ -7,6 +7,7 @@ import { CustomerCardsDisplay } from '@/components/customer-search/customer-card
 import type { CustomerDetail } from '@/lib/types/customer';
 import { getCustomerById } from '@/lib/actions/customer-detail';
 import { getCustomerCards, type CustomerCardData } from '@/lib/actions/cards';
+import { createAuditLog } from '@/lib/actions/audit';
 import { WorkflowNavigation } from '@/components/workflow';
 
 export default function CustomerCardsPage() {
@@ -47,6 +48,20 @@ export default function CustomerCardsPage() {
         try {
           const cardsData = await getCustomerCards(customerId);
           setCards(cardsData);
+          
+          // Log card view to audit
+          try {
+            await createAuditLog({
+              cashierId: 'temp-cashier-id', // TODO: Get from auth context
+              searchCriteria: { customerId },
+              resultsCount: cardsData.length,
+              selectedCustomerId: customerId,
+              actionType: 'view_cards',
+            });
+          } catch (auditError) {
+            console.error('Failed to log card view audit:', auditError);
+            // Don't fail the card loading if audit logging fails
+          }
           
           if (cardsData.length === 0) {
             // No cards scenario is handled by the component

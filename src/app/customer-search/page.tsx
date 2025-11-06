@@ -13,11 +13,19 @@ import { HierarchicalAddressSelect } from "@/components/customer-search/hierarch
 import type { CustomerSearchFilters } from "@/lib/types/customer";
 import { validateSearchFilters } from "@/lib/utils/search-validation";
 import { searchCustomers } from "@/lib/actions/customer-search";
+import { createAuditLog } from "@/lib/actions/audit";
 import { CustomerSearchResults } from "@/components/customer-search/customer-search-results";
 import { InfoBanner, WorkflowAlert } from "@/components/workflow";
+import { useOnlineMode } from "@/lib/hooks/useOnlineMode";
 
 export default function CustomerSearchPage() {
   const router = useRouter();
+  
+  // Online mode validation
+  const { isOnline, isOffline, healthStatus, recheckStatus } = useOnlineMode({
+    refetchInterval: 30000, // Check every 30 seconds
+  });
+  
   const [filters, setFilters] = useState<CustomerSearchFilters>({
     primaryPhone: "",
     secondaryPhone: "",
@@ -41,6 +49,20 @@ export default function CustomerSearchPage() {
   // TanStack Query mutation for customer search
   const searchMutation = useMutation({
     mutationFn: searchCustomers,
+    onSuccess: async (data) => {
+      // Log successful search to audit
+      try {
+        await createAuditLog({
+          cashierId: 'temp-cashier-id', // TODO: Get from auth context
+          searchCriteria: filters as unknown as Record<string, unknown>,
+          resultsCount: data.totalCount,
+          actionType: 'search',
+        });
+      } catch (error) {
+        console.error('Failed to log search audit:', error);
+        // Don't fail the search if audit logging fails
+      }
+    },
     onError: (error) => {
       console.error("Search error:", error);
       setValidationError("Error al buscar clientes. Por favor, intenta de nuevo.");
@@ -99,7 +121,21 @@ export default function CustomerSearchPage() {
     setFieldErrors({});
   };
 
-  const handleCustomerSelect = (customerId: string) => {
+  const handleCustomerSelect = async (customerId: string) => {
+    // Log customer selection to audit
+    try {
+      await createAuditLog({
+        cashierId: 'temp-cashier-id', // TODO: Get from auth context
+        searchCriteria: filters as unknown as Record<string, unknown>,
+        resultsCount: searchMutation.data?.totalCount || 0,
+        selectedCustomerId: customerId,
+        actionType: 'select',
+      });
+    } catch (error) {
+      console.error('Failed to log customer selection audit:', error);
+      // Don't fail the navigation if audit logging fails
+    }
+    
     // Navigate to customer detail page
     router.push(`/customer-detail/${customerId}`);
   };
@@ -110,6 +146,14 @@ export default function CustomerSearchPage() {
   };
 
   const handleSearch = async () => {
+    // Check online mode before allowing search
+    if (isOffline) {
+      setValidationError(
+        "Sistema en modo fuera de línea. Por favor, verifica la conectividad de red e intenta nuevamente."
+      );
+      return;
+    }
+    
     // Perform validation
     const validationResult = validateSearchFilters(filters);
     
@@ -158,6 +202,15 @@ export default function CustomerSearchPage() {
           message="Llena alguno de los campos solicitados para iniciar la búsqueda del cliente."
           className="mb-6"
         />
+
+        {/* Offline Warning */}
+        {isOffline && (
+          <WorkflowAlert 
+            type="error"
+            message={`Sistema en modo fuera de línea. ${!healthStatus?.clienteUnicoConnected ? 'Cliente Único no disponible. ' : ''}${!healthStatus?.iibBrokerConnected ? 'IIB Broker no disponible. ' : ''}Las búsquedas están deshabilitadas hasta que se restablezca la conexión.`}
+            className="mb-6"
+          />
+        )}
 
         {/* Validation Error */}
         {validationError && (
